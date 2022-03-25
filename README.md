@@ -1,2 +1,2 @@
-# mindseye
-MindsEye beta - ai art pilot
+# mindeye
+MindEye Generator
