@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit_nested_expanders
 import sys
 import os
+import gc
 import pathlib, shutil
 from os.path import exists as path_exists
 import glob
@@ -310,7 +311,7 @@ with settings:
                     # "Negative Prompt",
                     # "Better Quality",
                 ],
-                index=2,
+                index=3,
             )
             mse = col1.checkbox(
                 "Enable MSE regularization",
@@ -518,6 +519,8 @@ submit = st.button("Generate your piece!")
 
 
 def run_internal(args, status, stoutput, gray_during_execution):
+    gc.collect()
+    torch.cuda.empty_cache()
     status.write("Loading...")
     if page == "VQGAN+CLIP":
         if sub_model == "Hypertron v2":
@@ -666,8 +669,12 @@ if submit:
                 intermediary_folder, update_every = intermediary_frame_setup(args.seed)
                 args.frame_dir = intermediary_folder
             run_internal(args, status, col_output1, gray_during_execution)
+        gc.collect()
+        torch.cuda.empty_cache()
     except st.script_runner.StopException as e:
         status.empty()
+        gc.collect()
+        torch.cuda.empty_cache()
         gray_during_execution.markdown(
             '<style>div.row-widget.stRadio > div, label[data-baseweb="checkbox"],button{pointer-events: auto;filter: grayscale(0);opacity: 1;}</style>',
             unsafe_allow_html=True,
@@ -675,8 +682,8 @@ if submit:
         pass
     init_seed = int(random.randint(0, 2147483647))
     st.session_state.seed = init_seed
-    st.experimental_rerun()
     meta_status.empty()
+    st.experimental_rerun()
 
 with col_output2:
     from kora.xattr import get_id
@@ -694,12 +701,12 @@ with col_output2:
             gallery_text_area.write("Welcome back! Your last creation:")
             gallery_image_area.image(Image.open(files[0]))
             st.write(
-                f'<div class="bottom-line"><div class="row-widget stButton"><a kind="primary" class="css-1q8dd3e edgvbvh1" href="https://drive.google.com/drive/folders/{fid}" target="_blank">View your gallery on Google Drive</a></div><small>We <b>do not collect prompts or results</b>. Your creations don\'t belong to MindsEye. Read our <a href="https://multimodal.art/mindseye" target="_blank">FAQ</a>.<br>Feel free to reference #MindsEye and tag <a href="https://multimodal.art/multimodalart" target="_blank">@multimodalart</a> when sharing your creations if you wish</small></div>',
+                f'<div class="bottom-line"><div class="row-widget stButton"><a kind="primary" class="css-1q8dd3e edgvbvh1" href="https://drive.google.com/drive/folders/{fid}" target="_blank">View your gallery on Google Drive</a></div><small>We <b>do not collect prompts or results</b>. Your creations don\'t belong to MindsEye. Read our <a href="https://multimodal.art/mindseye#f-a-q" target="_blank">FAQ</a>.<br>Feel free to reference #MindsEye and tag <a href="https://multimodal.art/multimodalart" target="_blank">@multimodalart</a> when sharing your creations if you wish</small></div>',
                 unsafe_allow_html=True,
             )
     else:
         st.write(
-            f'<div class="bottom-line"><div class="row-widget stButton"><button disabled kind="primary" class="css-1q8dd3e edgvbvh1">No gallery found. Rerun Colab and connect to Drive to save pieces in a gallery</button></div><small>We <b>do not collect prompts or results</b>. Your creations don\'t belong to MindsEye. Read our <a href="https://multimodal.art/mindseye" target="_blank">FAQ</a>.<br>Feel free to reference #MindsEye and tag <a href="https://multimodal.art/multimodalart" target="_blank">@multimodalart</a> when sharing your creations if you wish</small></div>',
+            f'<div class="bottom-line"><div class="row-widget stButton"><button disabled kind="primary" class="css-1q8dd3e edgvbvh1">No gallery found. Rerun Colab and connect to Drive to save pieces in a gallery</button></div><small>We <b>do not collect prompts or results</b>. Your creations don\'t belong to MindsEye. Read our <a href="https://multimodal.art/mindseye#f-a-q" target="_blank">FAQ</a>.<br>Feel free to reference #MindsEye and tag <a href="https://multimodal.art/multimodalart" target="_blank">@multimodalart</a> when sharing your creations if you wish</small></div>',
             unsafe_allow_html=True,
         )
     if os.path.exists("progress.png"):

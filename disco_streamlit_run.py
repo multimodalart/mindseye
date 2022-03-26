@@ -1145,6 +1145,7 @@ def run_model(args2, status, stoutput, DefaultPaths):
                     for j, sample in enumerate(
                         stqdm(samples, total=total_steps + 1, st_container=stoutput)
                     ):
+                        print("test2")
                         if itt == 1:
                             status.empty()
                             imageLocation = stoutput.empty()
@@ -1290,6 +1291,7 @@ def run_model(args2, status, stoutput, DefaultPaths):
                     pass
                 except st.script_runner.StopException as e:
                     imageLocation.image(args2.image_file)
+                    gc.collect()
                     torch.cuda.empty_cache()
                     status.write("Done!")
                     pass
