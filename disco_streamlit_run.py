@@ -112,7 +112,7 @@ import shutil
 from pathvalidate import sanitize_filename
 
 # from tqdm.notebook import tqdm
-from stqdm import stqdm
+# from stqdm_local import stqdm
 import clip
 from resize_right import resize
 
@@ -655,6 +655,20 @@ def run_model(args2, status, stoutput, DefaultPaths):
 
     stop_on_next_loop = False  # Make sure GPU memory doesn't get corrupted from cancelling the run mid-way through, allow a full frame to complete
 
+    def nsToStr(d):
+        h = 3.6e12
+        m = h / 60
+        s = m / 60
+        return (
+            str(int(d / h))
+            + ":"
+            + str(int((d % h) / m))
+            + ":"
+            + str(int((d % h) % m / s))
+            + "."
+            + str(int((d % h) % m % s))
+        )
+
     def do_run():
         seed = args.seed
         # print(range(args.start_frame, args.max_frames))
@@ -1141,13 +1155,24 @@ def run_model(args2, status, stoutput, DefaultPaths):
                 itt = 1
                 imgToSharpen = None
                 status.write("Starting the execution...")
+                gc.collect()
+                torch.cuda.empty_cache()
+                # from tqdm.auto import tqdm
+                # from stqdm_local import stqdm
+
+                # total_iterables = stqdm(
+                #    samples, total=total_steps + 1, st_container=stoutput
+                # )
+                total_iterables = samples
                 try:
-                    for j, sample in enumerate(
-                        stqdm(samples, total=total_steps + 1, st_container=stoutput)
-                    ):
-                        print("test2")
+                    j = 0
+                    before_start_time = time.perf_counter()
+                    bar_container = status.container()
+                    iteration_counter = bar_container.empty()
+                    progress_bar = bar_container.progress(0)
+                    for sample in total_iterables:
                         if itt == 1:
-                            status.empty()
+                            iteration_counter.empty()
                             imageLocation = stoutput.empty()
                         sys.stdout.write(f"Iteration {itt}\n")
                         sys.stdout.flush()
@@ -1285,6 +1310,17 @@ def run_model(args2, status, stoutput, DefaultPaths):
                                     sys.stdout.write("Progress saved\n")
                                     sys.stdout.flush()
                             itt += 1
+                        j += 1
+                        time_past_seconds = time.perf_counter() - before_start_time
+                        iterations_per_second = j / time_past_seconds
+                        time_left = (total_steps - j) / iterations_per_second
+                        percentage = round((j / (total_steps + 1)) * 100)
+
+                        iteration_counter.write(
+                            f"{percentage}% {j}/{total_steps+1} [{time.strftime('%M:%S', time.gmtime(time_past_seconds))}<{time.strftime('%M:%S', time.gmtime(time_left))}, {round(iterations_per_second,2)} it/s]"
+                        )
+                        progress_bar.progress(int(percentage))
+
                     # if path_exists(drive_path):
 
                 except KeyboardInterrupt:
@@ -1301,6 +1337,7 @@ def run_model(args2, status, stoutput, DefaultPaths):
                         print("Starting Diffusion Sharpening...")
                         do_superres(imgToSharpen, f"{batchFolder}/{filename}")
                         display.clear_output()
+
                 import shutil
                 from pathvalidate import sanitize_filename
                 import os
@@ -2474,9 +2511,11 @@ def run_model(args2, status, stoutput, DefaultPaths):
     torch.cuda.empty_cache()
     try:
         do_run()
+    # except st.script_runner.StopException as e:
+    #    print("stopped here (a bit out)")
+    #    pass
     except KeyboardInterrupt:
         pass
     finally:
-        # print('seed', seed)
         gc.collect()
         torch.cuda.empty_cache()
