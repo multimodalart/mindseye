@@ -474,6 +474,11 @@ with settings:
                 value=False,
                 help="If selected, will include torchvision augmentations. This will slow down render times, but can affect image style as well. Suggest you experiment with this setting to understand how it affects your projects.",
             )
+            secondary_model = col2.checkbox(
+                "Use secondary model",
+                value=True,
+                help="The secondary model is a model that cleans up interim diffusion images for CLIP evaluation. Using the secondary model is faster (~50% faster)! But that speed comes with trade-offs, where some report reduced image quality and detail. Maybe experiment with this. ",
+            )
 
 with gensettings:
     intermediary_frames = st.checkbox("Save intermediary frames", value=False)
@@ -620,7 +625,7 @@ if submit:
             use256=False,
             denoised=False,
             useaugs=use_augs,
-            secondarymodel=True,
+            secondarymodel=secondary_model,
             clampmax=clamp_max,
             dango=True,
             # ddim=False,

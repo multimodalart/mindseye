@@ -1325,12 +1325,12 @@ def run_model(args2, status, stoutput, DefaultPaths):
 
                 except KeyboardInterrupt:
                     pass
-                except st.script_runner.StopException as e:
-                    imageLocation.image(args2.image_file)
-                    gc.collect()
-                    torch.cuda.empty_cache()
-                    status.write("Done!")
-                    pass
+                # except st.script_runner.StopException as e:
+                #    imageLocation.image(args2.image_file)
+                #    gc.collect()
+                #    torch.cuda.empty_cache()
+                #    status.write("Done!")
+                #    pass
                 imageLocation.empty()
                 with image_display:
                     if args.sharpen_preset != "Off" and animation_mode == "None":
