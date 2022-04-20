@@ -14,7 +14,7 @@ from tqdm.notebook import tqdm
 
 import numpy as np
 sys.path.append("./glid-3-xl")
-from guided_diffusion.script_util import create_model_and_diffusion, model_and_diffusion_defaults
+from jack_guided_diffusion.script_util import create_model_and_diffusion, model_and_diffusion_defaults
 
 from dalle_pytorch import DiscreteVAE, VQGanVAE
 
