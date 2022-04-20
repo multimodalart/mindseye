@@ -150,8 +150,13 @@ sys.path.append("./taming-transformers")
 sys.stdout.write("Parsing arguments ...\n")
 sys.stdout.flush()
 
-
+torch.cuda.empty_cache()
 def run_model(args2, status, stoutput, DefaultPaths):
+    global model, last_model
+    try:
+        last_model
+    except:
+        last_model = ''
     if args2.seed is not None:
         import torch
 
@@ -2087,7 +2092,17 @@ def run_model(args2, status, stoutput, DefaultPaths):
     status.write(f"Loading {args2.vqgan_model} ...\n")
 
     # model = "ImageNet 16384" #@param ['ImageNet 16384', 'ImageNet 1024', "Gumbel 8192", "Sber Gumbel", 'WikiArt 1024', 'WikiArt 16384', 'WikiArt 7mil', 'COCO-Stuff', 'COCO 1 Stage', 'FacesHQ', 'S-FLCKR']
-    model = args2.vqgan_model
+    if(last_model == args2.vqgan_model):
+        try:
+            model
+            status.write(f"Loading {args2.vqgan_model} loaded.")
+        except:
+            status.write(f"Loading {args.model_path} ...\n")
+            model = args2.vqgan_model
+    else:
+        #Yea I should make a function
+        status.write(f"Loading {args.model_path} ...\n")
+        model = args2.vqgan_model
 
     if model == "Gumbel 8192" or model == "Sber Gumbel":
         is_gumbel = True
@@ -2703,3 +2718,4 @@ def run_model(args2, status, stoutput, DefaultPaths):
 
             for src_file in range(1, mdf_iter):
                 shutil.move(os.path.join(src_path, src_file), trg_path)
+    last_model = args2.vqgan_model

@@ -76,6 +76,9 @@ a{color: tomato}
 div[data-testid="stToolbar"] button{pointer-events: auto !important;filter: grayscale(0) !important;opacity: 1 !important;}
 .bottom-line .stButton{margin-bottom: 0.75em}
 .bottom-line small{opacity: 0.75}
+@media only screen and (max-width: 500px){
+    .appview-container > section > div > div > div > div:nth-child(9){margin-top: 2em}
+}
 </style>
 """
 st.set_page_config(layout="wide")
@@ -111,7 +114,7 @@ st.write(
     unsafe_allow_html=True,
 )
 
-page_names = ["CLIP Guided Diffusion", "VQGAN+CLIP"]
+page_names = ["CLIP Guided Diffusion", "VQGAN+CLIP", "Latent Diffusion"]
 
 if "width" not in st.session_state:
     st.session_state["width"] = 512
@@ -479,6 +482,94 @@ with settings:
                 value=True,
                 help="The secondary model is a model that cleans up interim diffusion images for CLIP evaluation. Using the secondary model is faster (~50% faster)! But that speed comes with trade-offs, where some report reduced image quality and detail. Maybe experiment with this. ",
             )
+    elif page == "Latent Diffusion":
+        st.session_state.width = st.session_state.width
+        st.session_state.height = st.session_state.height
+        sub_model_names = ["GLID-3 XL"]
+        sub_model = st.radio("Implementation", sub_model_names, index=0)
+        col1, col2, col3 = st.columns(3)
+        num_steps = int(
+            col1.number_input(
+                "Number of steps",
+                value=50,
+                min_value=0,
+                max_value=None,
+                step=10,
+                help="How many iterations until your image is generated. The more, the best quality, but takes longer to generate. Has diminishing returns",
+            )
+        )
+        width_input = col2.empty()
+        width = int(
+            width_input.number_input(
+                "Width",
+                max_value=None,
+                value=256,
+                #key="width",
+                step=64,
+                on_change=dimensions_compatibility("width", col2),
+                help="Width of the generated image, you'll probably want to go above 512px only if you have Colab Pro",
+            )
+        )
+        height_input = col3.empty()
+        height = int(
+            height_input.number_input(
+                "Height",
+                max_value=None,
+                step=64,
+                value=256,
+                #key="height",
+                on_change=dimensions_compatibility("height", col3),
+                help="Height of the generated image, you'll probably want to go above 512px only if you have Colab Pro",
+            )
+        )
+        col1, col2 = st.columns(2)
+        which_model = col1.selectbox("Which model to use?",("Standard","Filtered"),help="The Standard model is very good with text-synthesis but sometimes can generate blurry images or add watermarks. The Filtered model behaves better, less blurry images and no watermarks, but loses some of the text-synthesis capacity. Great for photorealistic inputs")
+        images_in_parallel = col2.number_input("Images in parallel (how many images are created at once",value=6)
+        uploaded_file = st.file_uploader(
+            "Init image (optional)",
+            type=["png", "jpg"],
+            help="Start your creation with this image instead of starting from scratch",
+        )
+        if uploaded_file is not None:
+            col1, col2 = st.columns(2)
+            #initscale = col1.number_input(
+            #    "Init scale - How strongly should the model follow the init image",
+            #    value=1000,
+            #)
+            skipseedtimesteps = col2.number_input(
+                "Skip timesteps - the number of timesteps to spend blending the image with the guided-diffusion samples",
+                value=20,
+            )
+            if num_steps <= skipseedtimesteps:
+                col2.error(
+                    "The number of steps has to be higher than the timesteps skipped"
+                )
+        else:
+            initscale = 1000
+            skipseedtimesteps = 150
+        advanced_settings = st.expander("Advanced Settings")
+        with advanced_settings:
+            col1,col2 = st.columns(2)
+            guidance_scale = col1.number_input(
+                "Init scale - How strongly should the model follow the init image",
+                value=5.0,
+            )
+            cutn = col1.number_input("Cuts", value=16)
+            seed = col1.number_input(
+                "Seed",
+                # key="seed",
+                value=init_seed,
+                step=1,
+                help="Random seed to add randomness to the whole thing",
+            )
+            clip_guidance = col2.checkbox(
+                "Use CLIP Guidance",
+                value=False,
+                help="Helps with composition, but generation takes significantly lower"
+            )
+            if(clip_guidance):
+                clip_guidance_scale = col2.number_input("CLIP Guidance value",value=500)
+
 
 with gensettings:
     intermediary_frames = st.checkbox("Save intermediary frames", value=False)
@@ -510,12 +601,17 @@ with gensettings:
 
 if page == "CLIP Guided Diffusion":
     if sub_model == "Disco Diffusion v5":
-        sub_model_link = f'<a href="https://colab.research.google.com/github/alembics/disco-diffusion/blob/main/Disco_Diffusion.ipynb">{sub_model}</a>'
-    abstract_description = f"is usually described as **Coherent** and **Structured**, it can compose images with high quality results. The selected implementation is {sub_model_link}"
-else:
+        sub_model_link = f'<a href="https://colab.research.google.com/github/alembics/disco-diffusion/blob/main/Disco_Diffusion.ipynb" target="_blank">{sub_model}</a>'
+    abstract_description = f"usually described as **Coherent** and **Structured**, it can compose images with high quality results. The selected implementation is {sub_model_link}"
+elif page == "VQGAN+CLIP":
     if sub_model == "Hypertron v2":
-        sub_model_link = f'<a href="https://colab.research.google.com/drive/1N4UNSbtNMd31N_gAT9rAm8ZzPh62Y5ud">{sub_model}</a>'
-    abstract_description = f"Usually described as **Artistic** or **Creative**, it can compose images that are perceived as more artistic. The selected implementation is {sub_model_link}"
+        sub_model_link = f'<a href="https://colab.research.google.com/drive/1N4UNSbtNMd31N_gAT9rAm8ZzPh62Y5ud" target="_blank">{sub_model}</a>'
+    abstract_description = f"usually described as **Artistic** or **Creative**, it can compose images that are perceived as more artistic. The selected implementation is {sub_model_link}"
+elif page == "Latent Diffusion":
+    if sub_model == "GLID-3 XL":
+        sub_model_link = f'<a href="https://github.com/Jack000/glid-3-xl" target="_blank">{sub_model}</div>'
+    abstract_description = f"Latest avaliable model, really good results with text synthesis and fast outputs. The selected implementation is {sub_model_link}"
+
 st.write("**The model:**", page, abstract_description, unsafe_allow_html=True)
 
 st.write(custom_css, unsafe_allow_html=True)
@@ -533,6 +629,9 @@ def run_internal(args, status, stoutput, gray_during_execution):
     if page == "CLIP Guided Diffusion":
         if sub_model == "Disco Diffusion v5":
             import disco_streamlit_run as model
+    if page == "Latent Diffusion":
+        if sub_model == "GLID-3 XL":
+            import latent_streamlit_run as model
     gray_during_execution.markdown(
         '<style>div.row-widget.stRadio > div, label[data-baseweb="checkbox"],button{pointer-events: none;filter: grayscale(1);opacity: 0.5;}</style>',
         unsafe_allow_html=True,
@@ -559,6 +658,7 @@ def intermediary_frame_setup(seed):
     return intermediary_folder, update_every
 
 
+image_file = "progress.png" 
 gray_during_execution = st.empty()
 if submit:
     meta_status = col_output1.empty()
@@ -597,6 +697,7 @@ if submit:
             frame_dir=intermediary_folder,
             sub_model=sub_model,
         )
+        isMultiple = False
     elif page == "CLIP Guided Diffusion":
         args = argparse.Namespace(
             prompt=user_input,
@@ -660,6 +761,40 @@ if submit:
             perlin_mode="mixed",
             sub_model=sub_model,
         )
+        isMultiple = False
+    elif page == "Latent Diffusion":
+        args = argparse.Namespace(
+            text=user_input,
+            #model_path=f"{DefaultPaths.model_path}/finetune.pt",
+            model_path=f"{DefaultPaths.model_path}/finetune.pt" if which_model == "Filtered" else f"{DefaultPaths.model_path}/diffusion.pt",
+            kl_path=f"{DefaultPaths.model_path}/kl-f8.pt",
+            bert_path=f"{DefaultPaths.model_path}/bert.pt",
+            edit_x = 0,
+            edit_y = 0,
+            edit_width = 0,
+            edit_height = 0,
+            edit="",
+            mask="",
+            negative="",
+            init_image = image_path,
+            skip_timesteps = int(skipseedtimesteps),
+            prefix='',
+            num_batches = 1,
+            batch_size = int(images_in_parallel),
+            width=width,
+            height=height,
+            seed=int(seed),
+            guidance_scale=guidance_scale,
+            steps=int(num_steps),
+            cpu = False,
+            clip_guidance = False,
+            clip_guidance_scale = '',
+            cutn = int(cutn),
+            ddim = False,
+            ddpm = False,
+            image_file="progress.png",
+        )
+        isMultiple = True
     try:
         if (how_many_runs) > 1:
             if batch_folder:
@@ -703,10 +838,19 @@ with col_output2:
         if os.listdir(output_folder):
             files_path = os.path.join(output_folder, "*.png")
             files = sorted(glob.iglob(files_path), key=os.path.getctime, reverse=True)
+
+            if(files[0][-6] == '-'):
+                file_list = []
+                prepend = files[0][:-6]
+                for file in files:
+                    if(prepend in file):
+                        file_list.append(file)
+            else:
+                file_list = files[0]
             gallery_text_area.write("Welcome back! Your last creation:")
-            gallery_image_area.image(Image.open(files[0]))
+            gallery_image_area.image(file_list)
             st.write(
-                f'<div class="bottom-line"><div class="row-widget stButton"><a kind="primary" class="css-1q8dd3e edgvbvh1" href="https://drive.google.com/drive/folders/{fid}" target="_blank">View your gallery on Google Drive</a></div><small>We <b>do not collect prompts or results</b>. Your creations don\'t belong to MindsEye. Read our <a href="https://multimodal.art/mindseye#f-a-q" target="_blank">FAQ</a>.<br>Feel free to reference #MindsEye and tag <a href="https://multimodal.art/multimodalart" target="_blank">@multimodalart</a> when sharing your creations if you wish</small></div>',
+                f'<div class="bottom-line"><div class="row-widget stButton"><a kind="primary" class="css-1q8dd3e edgvbvh1" href="https://drive.google.com/drive/folders/{fid}" target="_blank">View your gallery on Google Drive</a></div><small>MindsEye is fully open source. We <b>do not collect prompts or results</b>. Your creations don\'t belong to MindsEye. Read our <a href="https://multimodal.art/mindseye#f-a-q" target="_blank">FAQ</a>.<br>Join our <a href="https://discord.gg/FsDBTE5BNx" target="_blank">Discord</a>! And if you enjoy using it, consider supporting us on <a href="https://www.patreon.com/multimodalart" target="_blank">Patreon</a> (I\'ll never lock any feature behind a paywall though)</small></div>',
                 unsafe_allow_html=True,
             )
     else:
@@ -714,10 +858,17 @@ with col_output2:
             f'<div class="bottom-line"><div class="row-widget stButton"><button disabled kind="primary" class="css-1q8dd3e edgvbvh1">No gallery found. Rerun Colab and connect to Drive to save pieces in a gallery</button></div><small>We <b>do not collect prompts or results</b>. Your creations don\'t belong to MindsEye. Read our <a href="https://multimodal.art/mindseye#f-a-q" target="_blank">FAQ</a>.<br>Feel free to reference #MindsEye and tag <a href="https://multimodal.art/multimodalart" target="_blank">@multimodalart</a> when sharing your creations if you wish</small></div>',
             unsafe_allow_html=True,
         )
-    if os.path.exists("progress.png"):
-        gallery_text_area.write("Your last creation:")
-        gallery_image_area.image(Image.open("progress.png"))
-
+        
+        if os.path.exists(f'{0}-{image_file}'):
+            gallery_text_area.write("Your last creation:")
+            image_gallery = []
+            for k in range(len(glob.glob('*.png'))-1):
+                image_gallery.append(f'{k}-{image_file}')
+            gallery_image_area.image(image_gallery)
+        #if os.path.exists("progress.png"):
+        #    gallery_text_area.write("Your last creation:")
+        #    gallery_image_area.image(Image.open("progress.png"))
+    
 footer = """
 <div class="footer">
 <p>MindsEye beta by <b><a href="https://twitter.com/multimodalart">@multimodalart</a></b><br>

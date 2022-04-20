@@ -1,0 +1,10 @@
+__pycache__
+glid-3-xl
+diffusion.pt
+finetune.pt
+inpaint.pt
+kl-f8.pt
+bert.pt
+CLIP
+outputs
+*.png

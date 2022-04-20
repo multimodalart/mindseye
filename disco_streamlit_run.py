@@ -161,8 +161,9 @@ import argparse
 sys.stdout.write("Parsing arguments ...\n")
 sys.stdout.flush()
 
-
+torch.cuda.empty_cache()
 def run_model(args2, status, stoutput, DefaultPaths):
+    global model, diffusion
     if args2.seed is not None:
         sys.stdout.write(f"Setting seed to {args2.seed} ...\n")
         sys.stdout.flush()
@@ -2491,18 +2492,21 @@ def run_model(args2, status, stoutput, DefaultPaths):
     args = SimpleNamespace(**args)
 
     print("Prepping model...")
-    model, diffusion = create_model_and_diffusion(**model_config)
-    model.load_state_dict(
-        torch.load(
-            f"{DefaultPaths.model_path}/{diffusion_model}.pt", map_location="cpu"
+    try:
+        model
+    except:
+        model, diffusion = create_model_and_diffusion(**model_config)
+        model.load_state_dict(
+            torch.load(
+                f"{DefaultPaths.model_path}/{diffusion_model}.pt", map_location="cpu"
+            )
         )
-    )
-    model.requires_grad_(False).eval().to(device)
-    for name, param in model.named_parameters():
-        if "qkv" in name or "norm" in name or "proj" in name:
-            param.requires_grad_()
-    if model_config["use_fp16"]:
-        model.convert_to_fp16()
+        model.requires_grad_(False).eval().to(device)
+        for name, param in model.named_parameters():
+            if "qkv" in name or "norm" in name or "proj" in name:
+                param.requires_grad_()
+        if model_config["use_fp16"]:
+            model.convert_to_fp16()
 
     sys.stdout.write("Starting ...\n")
     sys.stdout.flush()
