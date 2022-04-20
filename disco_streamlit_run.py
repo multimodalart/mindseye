@@ -2494,7 +2494,9 @@ def run_model(args2, status, stoutput, DefaultPaths):
     print("Prepping model...")
     try:
         model
+        status.write(f"{DefaultPaths.model_path}/{diffusion_model} loaded")
     except:
+        status.write(f"Loading {DefaultPaths.model_path}/{diffusion_model}...")
         model, diffusion = create_model_and_diffusion(**model_config)
         model.load_state_dict(
             torch.load(

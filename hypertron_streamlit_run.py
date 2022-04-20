@@ -2097,11 +2097,11 @@ def run_model(args2, status, stoutput, DefaultPaths):
             model
             status.write(f"Loading {args2.vqgan_model} loaded.")
         except:
-            status.write(f"Loading {args.model_path} ...\n")
+            status.write(f"Loading {args2.vqgan_model} ...\n")
             model = args2.vqgan_model
     else:
         #Yea I should make a function
-        status.write(f"Loading {args.model_path} ...\n")
+        status.write(f"Loading {args2.vqgan_model} ...\n")
         model = args2.vqgan_model
 
     if model == "Gumbel 8192" or model == "Sber Gumbel":
