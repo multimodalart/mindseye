@@ -525,6 +525,7 @@ with settings:
         col1, col2 = st.columns(2)
         which_model = col1.selectbox("Which model to use?",("Standard","Filtered"),help="The Standard model is very good with text-synthesis but sometimes can generate blurry images or add watermarks. The Filtered model behaves better, less blurry images and no watermarks, but loses some of the text-synthesis capacity. Great for photorealistic inputs")
         images_in_parallel = col2.number_input("Images in parallel (how many images are created at once",value=6)
+        negative_prompt = st.text_input("Negative prompts (texted added here will not be present on the final image)",value="")
         uploaded_file = st.file_uploader(
             "Init image (optional)",
             type=["png", "jpg"],
@@ -775,7 +776,7 @@ if submit:
             edit_height = 0,
             edit="",
             mask="",
-            negative="",
+            negative=negative_prompt,
             init_image = image_path,
             skip_timesteps = int(skipseedtimesteps),
             prefix='',
