@@ -356,13 +356,7 @@ def run_model(args, status, stoutput, DefaultPaths):
                 im = image.unsqueeze(0)
                 out = ldm.decode(im)
 
-                #npy_filename = f'output_npy/{args.prefix}{i * args.batch_size + k:05}.npy'
-                #with open(npy_filename, 'wb') as outfile:
-                #    np.save(outfile, image.detach().cpu().numpy())
-
                 out = TF.to_pil_image(out.squeeze(0).add(1).div(2).clamp(0, 1))
-                #imageLocationInternal[k].image(out)
-                #filename = f'output/{args.prefix}{i * args.batch_size + k:05}.png'
                 out.save(f'{k}-{args.image_file}')
                 imageLocationInternal.append(f'{k}-{args.image_file}')
                 if clip_score:
@@ -384,7 +378,7 @@ def run_model(args, status, stoutput, DefaultPaths):
             init = torch.cat(args.batch_size*2*[h], dim=0)
         else:
             init = None
-        
+        print(init)
         #image_display = Output()
         for i in range(args.num_batches):
             cur_t = diffusion.num_timesteps - 1
@@ -400,7 +394,7 @@ def run_model(args, status, stoutput, DefaultPaths):
                 device=device,
                 progress=True,
                 init_image=init,
-                skip_timesteps=args.skip_timesteps if init else 0,
+                skip_timesteps=args.skip_timesteps if init is not None else 0,
             )
             itt = 0
             before_start_time = time.perf_counter()

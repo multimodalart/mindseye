@@ -537,7 +537,7 @@ with settings:
             #    "Init scale - How strongly should the model follow the init image",
             #    value=1000,
             #)
-            skipseedtimesteps = col2.number_input(
+            skipseedtimesteps = st.number_input(
                 "Skip timesteps - the number of timesteps to spend blending the image with the guided-diffusion samples",
                 value=20,
             )
@@ -546,8 +546,7 @@ with settings:
                     "The number of steps has to be higher than the timesteps skipped"
                 )
         else:
-            initscale = 1000
-            skipseedtimesteps = 150
+            skipseedtimesteps = 0
         advanced_settings = st.expander("Advanced Settings")
         with advanced_settings:
             col1,col2 = st.columns(2)
@@ -665,11 +664,14 @@ if submit:
     meta_status = col_output1.empty()
     status = col_output1.empty()
     if uploaded_file is not None:
+        uploaded_folder = f"{DefaultPaths.root_path}/uploaded"
+        if not path_exists(uploaded_folder):
+            os.makedirs(uploaded_folder)
         image_data = uploaded_file.read()
-        f = open(uploaded_file.name, "wb")
+        f = open(f"{uploaded_folder}/{uploaded_file.name}", "wb")
         f.write(image_data)
         f.close()
-        image_path = uploaded_file.name
+        image_path = f"{uploaded_folder}/{uploaded_file.name}"
     else:
         image_path = None
     intermediary_folder, update_every = intermediary_frame_setup(seed)
