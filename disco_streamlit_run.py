@@ -120,6 +120,7 @@ from resize_right import resize
 # from models import SLIP_VITB16, SLIP, SLIP_VITL16
 from guided_diffusion.script_util import (
     create_model_and_diffusion,
+    create_gaussian_diffusion,
     model_and_diffusion_defaults,
 )
 from datetime import datetime
@@ -2494,6 +2495,7 @@ def run_model(args2, status, stoutput, DefaultPaths):
     print("Prepping model...")
     try:
         model
+        diffusion = create_gaussian_diffusion(**model_config)
         status.write(f"{DefaultPaths.model_path}/{diffusion_model} loaded")
     except:
         status.write(f"Loading {DefaultPaths.model_path}/{diffusion_model}...")
